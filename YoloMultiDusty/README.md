@@ -65,6 +65,13 @@ It is designed for NVIDIA boards and works with the DMA memory. As can see, it i
 | 3 cam | 11.5 | **26%** | 120 | |
 | 4 cam | 8.8 | **29%** | 143 | |
 
+| 1920 x 1080 | FPS | CPU | Mem (MB) | Comment |
+| :---: | :---: | :---: | :---:| :--- |
+| 1 cam | 25 | **17%** | 93 | |
+| 2 cam | 18.3 | **22%** | 110 | |
+| 3 cam | 11.3 | **27%** | 135 | |
+| 4 cam | 8.8 | **30%** | 153 | |
+
 Use pipeline:
 ```
 cap.open("rtspsrc location=rtsp://192.168.178.20:8554/test/ latency=300 ! rtph264depay ! \
