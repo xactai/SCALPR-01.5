@@ -40,7 +40,7 @@ void ThreadCam::GetPipeLine(void)
     //test if the device is a rtsp stream
     if((device.find("rtsp")!= std::string::npos) || (device.find("RTSP")!= std::string::npos) ){
         //found a rtsp device. test if the command isn't already defined by the user
-        if(device.find("appsink")!= std::string::npos){                      //an user string, not a full NVIDIA pipeline
+        if(device.find("appsink")== std::string::npos){                      //an user string, not a full NVIDIA pipeline
             cap.open(device);                                                //get new connection
             if(cap.isOpened()){
                 CamWidth  = cap.get(cv::CAP_PROP_FRAME_WIDTH);               //get width of the stream
