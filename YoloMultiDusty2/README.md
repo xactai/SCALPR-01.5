@@ -1,89 +1,162 @@
-## Multithread camera test 
+## Multithread IMOU camera interface 
 
-### This repo examines RTSP streams with NVIDIA boards like the Jetson Nano.
-As with all edge-based deep learning software, implementation is like a jigsaw puzzle.<br>
-Due to limited resources, you need to split the workload between the CPU and GPU processors.<br>
-With a carefully balanced design, it is possible to get good inference times.<br><br>
-An important part is the handling of RTSP streams.<br>
-These CCTV images must be processed and converted to the OpenCV standard (8-bit BGR).<br>
-Obviously, the fewer resources required, the better.<br><br>
-The captured images must be of a certain quality.<br>
-Detailed, high-resolution images give much better results than small, noisy images.<br>
-On the other hand, processing large images requires more resources. A trade-off is needed.<br><br>
-Deep learning models have predefined formats. In the case of ALPR:
-| Model | size |
-| :---: | :---:|
-| Vehicle Detection | 603x416x3 |
-| License Detection | 416x416x3 |
-| OCR Model | 352x128x3 |
-
-One could use 640 x 480 CCTV to detect vehicles. However, the license plates in these images are too small to be properly recognized.<br>
-The IMOU camera used has a resolution of 1920 x 1080, which produces license plates of approximately 147 x 61. These license plates are processed without many errors.<br>
-Using larger images is likely to result in H265 artefacts considering Ethernet bandwidth.<br><br>
-To get a more realistic impression, the tests are all done while a deep learning model is running.<br>
-The model is a YoloFastestV2 employed on an ncnn framework. The ncnn framework has Vulkan support, hence working with the GPU.<br>
-The streams must be near real-time. Latency times should be as short as possible.<br>
-Several strategies are possible. The tables below show the results.<br>
+### A dynamic array of IMOU RTSP cameras on an NVIDIA board like the Jetson Nano.
+👉 please read the explanation at [YoloMultiDusty](https://github.com/xactai/SCALPR-01.5/tree/main/YoloMultiDusty) first. This repo is the sequel.<br><br>
+The first study, YoloMultiDusty, showed that multithreading is the best solution for connecting multiple RTSP cameras to a Jeston board.
+When a dedicated NVIDIA pipeline is used, the CPU and GPU are under minimal load. This provides the necessary space for other (computer intensive) algorithms such as deep learning or object tracking.<br><br>
+This repo is the follow-up to this. The settings file has been replaced by a json script. In addition, preparations have been made to easily apply deep learning in the future.
+The different cameras live in a dynamic array. There is no limit to the number. Only the board resources, like memory, are the limitation.<br><br>
+![v0GX38JP0UFO3lXZ](https://github.com/xactai/SCALPR-01.5/assets/44409029/53c0e92a-3718-40f2-be2a-0eec245f58e0)<br>
+_Example of seven RSTP streams captured on a Jetson Nano._<br><rb>
 
 ------------
-## Benchmark.
 
-### RTSP polling
-The [first ALPR](https://github.com/xactai/qengineering-01) application uses the polling technique.<br>
-It calculates missed frames and skips them before grabbing a new image.<br>
-##### H264 encoded, 25 frames per second RTSP streams.
-| 1280 x 960 | FPS | CPU | Mem (MB) | Comment |
-| :---: | :---: | :---: | :---:| :--- |
-| 1 cam | 8.7 | 29% |  77 | |
-| 2 cam | 4.1 | 46% | 108 | |
-| 3 cam |  |  |  | Crashed |
-| 4 cam |  |  |  | Crashed |
+## Dependencies.
+To run the application, you need to have:
+- A member of the Jetson family, like a Jetson Nano or Xavier.<br>
+- OpenCV 64-bit installed.
+- ncnn framework installed.
+- JSON for C++ installed.
+- Code::Blocks installed, if you like to work with the C++ source. 
 
-### Multithreading
-The technique works by grabbing the frames in a separate thread.<br>
-##### H264 encoded, 25 frames per second RTSP streams.
-| 1280 x 960 | FPS | CPU | Mem (MB) | Comment |
-| :---: | :---: | :---: | :---:| :--- |
-| 1 cam | 24 | 41% | 102 | |
-| 2 cam | 10.6 | 65% | 155 | |
-| 3 cam | 4.6 | 85% | 180 | Unstable  |
-| 4 cam | 2.7 | 95% | 210 | Highly unstable |
-
-Use pipeline:
+### Installing the dependencies.
+Start with the usual 
 ```
-cap.open("rtsp://192.168.178.20:8554/test/"); 
+$ sudo apt-get update 
+$ sudo apt-get upgrade
+$ sudo apt-get install curl libcurl3
+$ sudo apt-get install cmake wget
 ```
-
-### NVIDIA Multithreading
-The technique is identical to the one above. The only difference is the used GStreamer pipeline.<br>
-It is designed for NVIDIA boards and works with the DMA memory. As can see, it is superior to the others.<br>
-##### H264 encoded, 25 frames per second RTSP streams.
-| 1280 x 960 | FPS | CPU | Mem (MB) | Comment |
-| :---: | :---: | :---: | :---:| :--- |
-| 1 cam | 25 | **17%** | 89 | |
-| 2 cam | 20 | **23%** | 108 | |
-| 3 cam | 11.5 | **26%** | 120 | |
-| 4 cam | 8.8 | **29%** | 143 | |
-
-| 1920 x 1080 | FPS | CPU | Mem (MB) | Comment |
-| :---: | :---: | :---: | :---:| :--- |
-| 1 cam | 25 | **17%** | 93 | |
-| 2 cam | 18.3 | **22%** | 110 | |
-| 3 cam | 11.3 | **27%** | 135 | |
-| 4 cam | 8.8 | **30%** | 153 | |
-
-Use pipeline:
+#### JSON for C++
+written by [Niels Lohmann](https://github.com/nlohmann).
 ```
-cap.open("rtspsrc location=rtsp://192.168.178.20:8554/test/ latency=300 ! rtph264depay ! \
-          h264parse ! queue max-size-buffers=10 leaky=2 ! nvv4l2decoder ! video/x-raw(memory:NVMM) , format=(string)NV12 ! \
-          nvvidconv ! video/x-raw , width=1280 , height=960, format=(string)BGRx ! videoconvert ! appsink drop=1 sync=0"); 
+$ git clone https://github.com/nlohmann/json.git
+$ cd json
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make -j4
+$ sudo make install
 ```
+#### Code::Blocks
+```
+$ sudo apt-get install codeblocks
+```
+#### OpenCV
+Follow this [guide](https://qengineering.eu/install-opencv-4.5-on-jetson-nano.html).
+#### ncnn
+Follow this [guide](https://qengineering.eu/install-ncnn-on-jetson-nano.html).
+
+------------
+
+## Config.json.
+All required settings are listed in the `config.json` file. Without this file, the app will not work.
+```json
+{
+    "VERSION": "1.1.0",
+
+    "STREAMS_NR":2,
+
+    "STREAM_1": {
+        "CAM_NAME": "Cam 1",
+        "VIDEO_INPUT": "CCTV",
+        "VIDEO_INPUTS_PARAMS": {
+            "image": "./images/car.jpg",
+            "folder": "./inputs/images",
+            "video": "./images/demo.mp4",
+            "usbcam": "v4l2src device=/dev/video0 ! video/x-raw(memory:NVMM),width=640, height=360, framerate=30/1 ! videoconvert ! appsink",
+            "CSI1": "nvarguscamerasrc sensor_id=0 ! video/x-raw(memory:NVMM),width=640, height=480, framerate=15/1, format=NV12 ! nvvidconv ! video/x-raw, format=BGRx, width=640, height=480 ! videoconvert ! video/x-raw, format=BGR ! appsink",
+            "CSI2": "nvarguscamerasrc sensor_id=1 ! video/x-raw(memory:NVMM),width=640, height=480, framerate=15/1, format=NV12 ! nvvidconv ! video/x-raw, format=BGRx, width=640, height=480 ! videoconvert ! video/x-raw, format=BGR ! appsink",
+            "CCTV": "rtsp://192.168.178.20:8554/test/",
+            "remote_hls_gstreamer": "souphttpsrc location=http://YOUR_HLSSTREAM_URL_HERE.m3u8 ! hlsdemux ! decodebin ! videoconvert ! videoscale ! appsink"
+        }
+    },
+
+    "STREAM_2": {
+        "CAM_NAME": "Cam 2",
+        "VIDEO_INPUT": "CCTV",
+        "VIDEO_INPUTS_PARAMS": {
+            "CCTV": "rtsp://192.168.178.26:8554/test/"
+        }
+    },
+
+    "STREAM_3": {
+        "CAM_NAME": "Cam 3",
+        "VIDEO_INPUT": "CCTV",
+        "VIDEO_INPUTS_PARAMS": {
+            "CCTV": "rtsp://192.168.178.25:8554/test/"
+        }
+    },
+
+    "STREAM_4": {
+        "CAM_NAME": "Cam 4",
+        "VIDEO_INPUT": "CCTV",
+        "VIDEO_INPUTS_PARAMS": {
+            "CCTV": "rtsp://192.168.178.36:8554/test/"
+        }
+    },
+
+    "WORK_WIDTH": 640,
+    "WORK_HEIGHT": 480,
+    "THUMB_WIDTH": 640,
+    "THUMB_HEIGHT": 480,
+
+    "MJPEG_PORT": 8090,
+
+    "DNN_Rect": {
+        "x_offset": 0,
+        "y_offset": 0,
+        "width":  640,
+        "height": 480
+    }
+}
+```
+#### STREAMS_NR
+Give the number of used streams. Can be any figure, there is no hard-coded limitation.<br> 
+However, keep in mind the available resources.
+#### STREAM_x
+Define your input for flow x here. The number of stream_ must be at least equal to the number of streams given above.
+#### CAM_NAME
+For your convenience, you can give the RTSP stream a readable name.
+#### VIDEO_INPUT
+Select your video input. It can be one of the sources listed under `VIDEO_INPUTS_PARAMS`:<br>
+`file, movie, usbcam, raspberrycam, remote_cam or remote_hls_gstreamer`.<br>
+Default choice is an RTSP video stream.
+#### VIDEO_INPUTS_PARAMS
+| Item      | Description |
+| --------- | -----|
+| image  | Name and location of the picture. It must be a jpg or png file. |
+| folder  | Directory containing the pictures. They must be jpg or png. |
+| video | Name and location of the video file. |
+| usbcam  | The GStreamer pipeline connecting the ALPR to an USB camera. |
+| CSI1 | The GStreamer pipeline connecting the ALPR to an MIPI camera (port 0). |
+| CSI2 | The GStreamer pipeline connecting the ALPR to an MIPI camera (port 1). |
+| CCTV | The GStreamer pipeline connecting the ALPR to an RTSP source. |
+| remote_hls_gstreamer | The GStreamer pipeline connecting the ALPR to an HLS source. |
+#### WORK_WIDTH, WORK_HEIGHT
+Define the size of the frames that the ALPR will use.<br>
+It may be smaller than the RTSP streams received. Smaller resolutions require fewer resources, which increases processing speed. Or more cameras can be connected.<br>
+On the other hand, the images cannot be chosen too small because the number plate will still have to be legible. Remember, the darknet model for the license plates works with [352x128](https://github.com/xactai/SCALPR-01.5/tree/main/YoloMultiDusty#this-repo-examines-rtsp-streams-with-nvidia-boards-like-the-jetson-nano) pixels.<br>
+Frames larger than the camera resolution are processed, but do not add anything to the accuracy. They will only slow down the performance.
+#### THUMB_WIDTH, THUMB_HEIGHT
+The individual images are merged into an overview that is displayed on the screen. The individual size and height of these thumbnails are given here.
+#### MJPEG_PORT
+The port number of the local host to which the composed video is streamed. It is not possible to send the individual images.
+#### DNN_Rect
+Most deep learning models work with square images. Images from the IMOU camera have an aspect ratio of 16:9.
+These have been reduced to a square. This causes distortion. Especially fast lightweight models such as YoloX or YoloFastest are sensitive to these artifacts. They recognize fewer objects.
+With the parameters of DNN_Rect a section can be sent to the model.<br><br>
+![image](https://github.com/xactai/SCALPR-01.5/assets/44409029/73e6814b-523a-4b24-9747-63fe0f097767)<br>
+_Input image_.<br>
+![image](https://github.com/xactai/SCALPR-01.5/assets/44409029/2f95ab85-77c3-467e-9df7-c40c6a4235c6)<br>
+_Resized to 352x352_.<br>
+![image](https://github.com/xactai/SCALPR-01.5/assets/44409029/b964a147-b930-414f-b928-4cfe3b13359c)<br>
+_Using the DNN_Rect_.
+
 
 ------------
 
 ## Running the app.
 
 To run the application, load the project file `YoloMultiDusty.cbp` in Code::Blocks.<br/> 
-Give the RTSP streams in the `settings.txt`.<br> 
-Give only the RTSP address, not the full pipeline. The app will generate to correct string for you.
-
+Give the RTSP streams in the `config.json`.<br>
