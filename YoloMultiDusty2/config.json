@@ -30,7 +30,7 @@
         "CAM_NAME": "Cam 3",
         "VIDEO_INPUT": "CCTV",
         "VIDEO_INPUTS_PARAMS": {
-            "CCTV": "rtsp://192.168.178.20:8554/test/"
+            "CCTV": "rtsp://192.168.178.25:8554/test/"
         }
     },
 
@@ -38,7 +38,7 @@
         "CAM_NAME": "Cam 4",
         "VIDEO_INPUT": "CCTV",
         "VIDEO_INPUTS_PARAMS": {
-            "CCTV": "rtsp://192.168.178.26:8554/test/"
+            "CCTV": "rtsp://192.168.178.36:8554/test/"
         }
     },
 
@@ -54,32 +54,5 @@
         "y_offset": 0,
         "width":  640,
         "height": 480
-    },
-
-    "VEHICLE_MODEL": "./models/vehicle-detection",
-    "LICENSE_MODEL": "./models/lp-detection-layout-classification",
-    "OCR_MODEL": "./models/lp-recognition",
-
-    "RoI": {
-        "x_offset": 0,
-        "y_offset": 0,
-        "width": 2280,
-        "height": 1080
-    },
-
-    "HEURISTIC_ON": false,
-
-    "PRINT_ON_CLI": false,
-    "PRINT_ON_RENDER": true,
-
-    "FoI_FOLDER": "none",
-    "VEHICLES_FOLDER": "none",
-    "PLATES_FOLDER": "none",
-    "JSONS_FOLDER": "./outputs/jsons",
-    "RENDERS_FOLDER": "none",
-
-    "HEURISTIC_ON": true,
-    "THRESHOLD_VERHICLE": 0.01,
-    "THRESHOLD_PLATE": 0.01,
-    "THRESHOLD_OCR": 0.5
+    }
 }
