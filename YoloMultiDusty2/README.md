@@ -1,6 +1,6 @@
 ## Multithreaded Simultaneous Inputs Interface 
 
-### A dynamic array of multiple inputs on an NVIDIA board like the Jetson Nano.
+### A dynamic array of multiple video inputs on an NVIDIA board like the Jetson Nano.
 👉 please read the explanation at [YoloMultiDusty](https://github.com/xactai/SCALPR-01.5/tree/main/YoloMultiDusty) first. This repo is the sequel.<br><br>
 The first study, YoloMultiDusty, showed that multithreading is the best solution for connecting multiple inputs to a Jeston board.
 When a dedicated NVIDIA pipeline is used, the CPU and GPU are under minimal load. This provides the necessary space for other (computer intensive) algorithms such as deep-learning and/or object tracking.<br><br>
