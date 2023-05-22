@@ -1,13 +1,13 @@
-## Multithread IMOU camera interface 
+## Multithreaded Simultaneous Inputs Interface 
 
-### A dynamic array of IMOU RTSP cameras on an NVIDIA board like the Jetson Nano.
+### A dynamic array of multiple inputs on an NVIDIA board like the Jetson Nano.
 👉 please read the explanation at [YoloMultiDusty](https://github.com/xactai/SCALPR-01.5/tree/main/YoloMultiDusty) first. This repo is the sequel.<br><br>
-The first study, YoloMultiDusty, showed that multithreading is the best solution for connecting multiple RTSP cameras to a Jeston board.
-When a dedicated NVIDIA pipeline is used, the CPU and GPU are under minimal load. This provides the necessary space for other (computer intensive) algorithms such as deep learning or object tracking.<br><br>
-This repo is the follow-up to this. The settings file has been replaced by a json script. In addition, preparations have been made to easily apply deep learning in the future.
-The different cameras live in a dynamic array. There is no limit to the number. Only the board resources, like memory, are the limitation.<br><br>
+The first study, YoloMultiDusty, showed that multithreading is the best solution for connecting multiple inputs to a Jeston board.
+When a dedicated NVIDIA pipeline is used, the CPU and GPU are under minimal load. This provides the necessary space for other (computer intensive) algorithms such as deep-learning and/or object tracking.<br><br>
+This repo is the follow-up to this. The settings file has been replaced by a JSON script. In addition, preparations have been made to easily apply deep-learning in the future.
+The different inputs live in a dynamic array. There is no limit to the number. Only the board resources, like memory, are the limitation.<br><br>
 ![v0GX38JP0UFO3lXZ](https://github.com/xactai/SCALPR-01.5/assets/44409029/53c0e92a-3718-40f2-be2a-0eec245f58e0)<br>
-_Example of seven RSTP streams captured on a Jetson Nano._<br><rb>
+_Example of seven inputs (in this case 7 RTSP streams) captured on a Jetson Nano._<br><rb>
 
 ------------
 
@@ -143,7 +143,7 @@ The individual images are merged into an overview that is displayed on the scree
 #### MJPEG_PORT
 The port number of the local host to which the composed video is streamed. It is not possible to send the individual images.
 #### DNN_Rect
-Most deep learning models work with square images. Images from the IMOU camera have an aspect ratio of 16:9.
+Most deep learning models work with square images. Images from a Full-HD input have an aspect ratio of 16:9.
 These have been reduced to a square. This causes distortion. Especially fast lightweight models such as YoloX or YoloFastest are sensitive to these artifacts. They recognize fewer objects.
 With the parameters of DNN_Rect a section can be sent to the model.<br><br>
 ![image](https://github.com/xactai/SCALPR-01.5/assets/44409029/73e6814b-523a-4b24-9747-63fe0f097767)<br>
