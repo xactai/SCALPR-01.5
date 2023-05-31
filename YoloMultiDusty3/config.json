@@ -1,16 +1,16 @@
 {
     "VERSION": "1.1.0",
 
-    "STREAMS_NR":2,
+    "STREAMS_NR":1,
 
     "STREAM_1": {
         "CAM_NAME": "Cam 1",
         "MJPEG_PORT": 8091,
-        "VIDEO_INPUT": "CCTV",
+        "VIDEO_INPUT": "video",
         "VIDEO_INPUTS_PARAMS": {
             "image": "./images/car.jpg",
             "folder": "./inputs/images",
-            "video": "./images/demo.mp4",
+            "video": "./Cars.mp4",
             "usbcam": "v4l2src device=/dev/video0 ! video/x-raw(memory:NVMM),width=640, height=360, framerate=30/1 ! videoconvert ! appsink",
             "CSI1": "nvarguscamerasrc sensor_id=0 ! video/x-raw(memory:NVMM),width=640, height=480, framerate=15/1, format=NV12 ! nvvidconv ! video/x-raw, format=BGRx, width=640, height=480 ! videoconvert ! video/x-raw, format=BGR ! appsink",
             "CSI2": "nvarguscamerasrc sensor_id=1 ! video/x-raw(memory:NVMM),width=640, height=480, framerate=15/1, format=NV12 ! nvvidconv ! video/x-raw, format=BGRx, width=640, height=480 ! videoconvert ! video/x-raw, format=BGR ! appsink",
@@ -20,8 +20,8 @@
         "DNN_Rect": {
             "x_offset": 0,
             "y_offset": 0,
-            "width":  640,
-            "height": 480
+            "width":  1920,
+            "height": 1080
         }
     },
 
@@ -70,19 +70,12 @@
         }
     },
 
-    "WORK_WIDTH": 640,
-    "WORK_HEIGHT": 480,
-    "THUMB_WIDTH": 640,
-    "THUMB_HEIGHT": 480,
+    "WORK_WIDTH": 1920,
+    "WORK_HEIGHT": 1080,
+    "THUMB_WIDTH": 1920,
+    "THUMB_HEIGHT": 1080,
 
     "MJPEG_PORT": 8090,
-
-    "DNN_Rect": {
-        "x_offset": 0,
-        "y_offset": 0,
-        "width":  640,
-        "height": 480
-    },
 
     "VEHICLE_MODEL": "./models/vehicle-detection",
     "LICENSE_MODEL": "./models/lp-detection-layout-classification",
