@@ -173,7 +173,7 @@ void TProcessPipe::ProcessDNN(cv::Mat& frame)
         }
         frame(DnnRect).copyTo(DNNframe);
 
-        objects = YoloV4net.detect(DNNframe,0.4);
+        objects = YoloV4net.detect(DNNframe);
 
         //shift the outcome to its position in the original frame
         for(size_t i = 0; i < objects.size(); i++) {
@@ -182,10 +182,11 @@ void TProcessPipe::ProcessDNN(cv::Mat& frame)
         }
     }
     else{
-        objects = YoloV4net.detect(frame,0.4);
+        objects = YoloV4net.detect(frame);
     }
 
-    objects = YoloV4net.tracking_id(objects);
+    //get the tracking ids
+    objects = YoloV4net.tracking_id(objects,true,20,100);
 
     DrawObjects(frame, objects);
 }
@@ -200,6 +201,10 @@ void TProcessPipe::DrawObjects(cv::Mat& frame, const std::vector<bbox_t>& boxes)
     }
 
     if(Js.PrintOnRender || Js.MJPEG_Port>7999){
+        //DNN_rect
+        cv::rectangle(frame, cv::Point(DnnRect.x, DnnRect.y),
+                             cv::Point(DnnRect.x+DnnRect.width, DnnRect.y+DnnRect.height), cv::Scalar(128,255,0),3);
+        //the objects
         for(size_t i = 0; i < boxes.size(); i++) {
 
             char text[256];
@@ -222,7 +227,7 @@ void TProcessPipe::DrawObjects(cv::Mat& frame, const std::vector<bbox_t>& boxes)
             cv::putText(frame, text, cv::Point(x, y + label_size.height),
                         cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0));
 
-            cv::rectangle (frame, cv::Point(boxes[i].x, boxes[i].y),
+            cv::rectangle(frame, cv::Point(boxes[i].x, boxes[i].y),
                                   cv::Point(boxes[i].x+boxes[i].w, boxes[i].y+boxes[i].h), cv::Scalar(255,0,0));
         }
     }
