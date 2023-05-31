@@ -9,7 +9,7 @@ using namespace std;
 extern Tjson    Js;
 extern Detector YoloV4net;
 //---------------------------------------------------------------------------
-const char* class_names[] = {
+static const char* class_names[] = {
     "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
     "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
     "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
@@ -185,6 +185,8 @@ void TProcessPipe::ProcessDNN(cv::Mat& frame)
         objects = YoloV4net.detect(frame,0.4);
     }
 
+    objects = YoloV4net.tracking_id(objects);
+
     DrawObjects(frame, objects);
 }
 //---------------------------------------------------------------------------
@@ -201,7 +203,10 @@ void TProcessPipe::DrawObjects(cv::Mat& frame, const std::vector<bbox_t>& boxes)
         for(size_t i = 0; i < boxes.size(); i++) {
 
             char text[256];
-            sprintf(text, "%s %.1f%%", class_names[boxes[i].obj_id], boxes[i].prob * 100);
+            if(boxes[i].track_id > 0 )
+                sprintf(text, "%i | %s %.1f%%", boxes[i].track_id, class_names[boxes[i].obj_id], boxes[i].prob * 100);
+            else
+                sprintf(text, "%s %.1f%%", class_names[boxes[i].obj_id], boxes[i].prob * 100);
 
             int baseLine = 0;
             cv::Size label_size = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);

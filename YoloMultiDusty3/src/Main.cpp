@@ -22,25 +22,10 @@ TProcessPipe **ProPipe;
 
 // Darknet YoloV4-tiny
 Detector YoloV4net("./models/yolov4-tiny.cfg", "./models/yolov4-tiny.weights");
-//vector<string> CocoNames;
 
 // some other global components
 float           Temp;
 TFPS            MyFPS;
-//----------------------------------------------------------------------------------------
-vector<string> objects_names_from_file(string const filename)
-{
-	ifstream file(filename);
-	vector<string> file_lines;
-
-	if (!file.is_open()) return file_lines;
-
-	for(string line; file >> line;) file_lines.push_back(line);
-
-	cout << "object names loaded \n";
-
-	return file_lines;
-}
 //----------------------------------------------------------------------------------------
 float GetTemp(void)
 {
@@ -73,7 +58,6 @@ void GetComposedView(cv::Mat& Frame)          //returns all frames in one large 
                                     //suppose  4 - 5 - 8 - 9 - 10   (= Total)
     NrX = ceil(sqrt(Total));        //you get  2 - 3 - 3 - 3 -  4   (ceil rounds upwards)
     NrY = ceil(((float)Total)/NrX); //you get  2 - 2 - 3 - 3 -  3   (always NrX * NrY >= Total)
-
 
     Frame = cv::Mat(NrY*TmbHt, NrX*TmbWd, CV_8UC3, cv::Scalar(128,128,128));
 
@@ -154,8 +138,6 @@ int main()
     for(int i=0; i<Js.UsedStreams; i++){
         ProPipe[i]->StartThread();
     }
-
-//    CocoNames = objects_names_from_file("./models/coco.names");
 
     if(Js.PrintOnRender){
         cout << "Entering main loop" << endl;
