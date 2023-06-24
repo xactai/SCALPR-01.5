@@ -20,7 +20,7 @@ Because vehicles avoid the right wall, we can crop out a large part of the image
 All detected object in `DNN_Rect` are marked with a thin blue rectangle (chair, monitor, guard outside).
 In the `config.json` `DNN_Rect` is defined in pixels.
 
-#### Background
+#### Foreground
 The next phase selects only persons, two and four-wheelers, in the foreground.<br>
 YoloV4 recognize a lot of objects. Most of them are in the street in the background; pedestrians, traffic like cars, tuk-tuks, etc.<br>
 The most simple and effective way to filter those objects out is to look at their size and class (person, car, truck, tv-monitor, chair).<br>
@@ -38,6 +38,42 @@ To highlight possible tracking errors, the color of the rectangle depends on the
 
 #### Route
 At this stage, the static frame-by-frame domain transitions into the tractory domain. In other words, only movements are observed.<br> 
+Once an object has a sequence number, a structure is created and added to the Rbusy array (Route Busy).<br>
+Note, in addition to vehicles, people are tracked once they are detected also.<br>
+The structure contains all essential information about the object.<br>
+```cpp
+// bbox_t
+    unsigned int x, y, w, h;                        //(x,y) - top-left corner, (w, h) - width & height of bounded box
+    float prob;                                     //confidence - probability that the object was found correctly
+    unsigned int obj_id;                            //class of object - from range [0, classes-1]
+    unsigned int track_id;                          //tracking id for video (0 - untracked, 1 - inf - tracked object)
+    unsigned int frames_counter;                    //counter of frames on which the object was detected
+    float x_3d, y_3d, z_3d;                         //center of object (in Meters) if ZED 3D Camera is used
+// TObject
+    bool     Used {false};                          //this object (vehicle or person) is further investigated.
+    bool     Done {false};                          //this object has crossed the vehicle rect border and is considered processed.
+    bool     PlateFound {false};                    //license plate found
+    cv::Rect PlateRect;                             //location of the plate rectangle
+    float    PlateMedge;                            //ratio of edges
+    float    PlateFuzzy {0.0};                      //output weighted calcus for better plate
+    cv::Mat  Plate;                                 //image of the plate
+// TRoute    
+    size_t  FirstFrame;                             //used for stitching two routes to one
+    size_t  LastFrame;                              //when not updated, you know the object has left the scene
+    std::chrono::steady_clock::time_point Tstart;   //time stamp first seen
+    std::chrono::steady_clock::time_point Tend;     //time stamp last seen
+    int Xc {0};                                     //ROI center (x,y)
+    int Yc {0};                                     //ROI center (x,y)
+    int Xt, Yt;                                     //previous center (x,y)
+    float Velocity;                                 //pixels/100mSec (0.1Sec to increase readability)
+    TMoveAver<float> Speed;                         //average speed over the last 5 observations
+    float PlateSpeed;                               //average speed when snapshot of license was taken
+    float PlateEdge;                                //edge ratio in plate
+    float PlateRatio {0.0};                         //plate width/height
+    std::string PlateOCR;                           //OCR string with best result of the plate (if found)
+```
+It's a long list because C++ inheritance is used here.<br>
+TRoute inherits all elements from TObject, which in turn has already inherited the structure bbox_t from Darknet.<br>
 
 ------------
 
