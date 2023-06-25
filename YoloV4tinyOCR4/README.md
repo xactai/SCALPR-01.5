@@ -83,9 +83,14 @@ When the object is identified the next time, `LastFrame` and `Tend` are filled. 
 When a license plate is detected, `PlateFound` is true, 'PlateSpeed' is filled with the average speed and `PlateEdge` with the variable `PlateMedge`. See the pictures at [YoloV4tinyMulti3](https://github.com/xactai/SCALPR-01.5/tree/main/YoloV4tinyMulti3#license-plate-location-detector). The last parameter, `PlateRatio`, is filled with the license plate width/height ratio. Subsequence frames will update all these parameters.<br><br>
 The goal now is to get the best frame for the OCR detection of the license. The wider the plate, the better. However, images may be blurry. This phenomenon is caused by large shutter speeds and the H265 compression. The latter reduces the bandwidth of the video signal by removing redundant regions between consecutive frames. Details, like tiny characters, only become visible when larger movements have been processed. Hence license plates become clearer when the vehicle is stationary in front of the camera.<
 #### Fuzzy weights.
-The best frame is a weighted sum of the width, edges and speed.
-
-
+The best frame is a weighted sum of the width, edges and speed. The variables are multiplied by `WEIGHT_WIDTH, WEIGHT_EDGE` and `WEIGHT_SPEED` from the Config.json. In the image above, you can see this calculation in the terminal window. Please note that the numbers are not normalized. In other words, the 114 plate width is typical of this camera setup. The same applies to the edges and speed. Other situations can give a number a different size.<br>
+If the Fuzzy number exceeds the previous one, the license plate is considered 'better'. `PlateFuzzy` is loaded with this higher value, and a copy of the license plate image (`cv::Mat  Plate`) is created. Over time, you see the license plate image become wider and clearer (as long as the vehicle is moving slowly).
+Play a bit with the weights to get the best result. A lot of emphasis on width can result in larger plates, but with vague characters, the OCR engine will eventually generate more errors than a smaller plate with sharp letters.
+#### Rdone.
+After a frame update, all elements in the Rbusy are scanned for their `LastFrame`. If a `LastFrame` does not match the current frame number, you know that the object has not been updated. If a license plate is found, and the image `Plate` isn't empty, the OCR engine is invoked to read the license plate. This engine is currently the same as found in https://github.com/xactai/qengineering-01. The result is stored in `PlateOCR`, a readable std::string.<br>
+Time to move the structure to the Rdone (Route Done) array and setting the `Done` flag. At the same time, it is removed from the Rbusy array.<br><br>
+Most of the time, this mechanism works fine. However, there are situations where it fails. It has to do with the imperfection of the Darknet tracking engine. When `track_id` doesn't occur any more, it doesn't always mean it left the scene. The large object in front may be hiding it. Think of a tuk-tuk moving near the camera and blocking the view to the entrance. Once moved away, the original object re-appears.<br> 
+The Darknet tracking engine may respond to this event by generating the same `track-id` or issuing a new tracking number.
 
 ------------
 
