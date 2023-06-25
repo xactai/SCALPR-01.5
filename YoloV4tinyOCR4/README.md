@@ -81,7 +81,8 @@ When an object gets a tracking number `track_id`, a new structure is allocated i
 When the object is identified the next time, `LastFrame` and `Tend` are filled. `Xc, Yc` are transferred to `Xt, Yt` before the new ROI centre is updated.
 `Velocity` is calculated from the Euclidean distance between the `Xc, Yc` and `Xt, Yt`, divided by the elapsed time. `Speed` gives a moving average of the last 5 velocities.<br><br>
 When a license plate is detected, `PlateFound` is true, 'PlateSpeed' is filled with the average speed and `PlateEdge` with the variable `PlateMedge`. See the pictures at [YoloV4tinyMulti3](https://github.com/xactai/SCALPR-01.5/tree/main/YoloV4tinyMulti3#license-plate-location-detector). The last parameter, `PlateRatio`, is filled with the license plate width/height ratio. Subsequence frames will update all these parameters.<br><br>
-The goal now is to get the best frame for the OCR detection of the license. The wider the plate, the better. However, images may be blurry. This phenomenon is caused by large shutter speeds and the H265 compression. The latter reduces the bandwidth of the video signal by removing redundant regions between consecutive frames. Details, like tiny characters, only become visible when larger movements have been processed. Hence license plates become clearer when the vehicle is stationary in front of the camera.<br>
+The goal now is to get the best frame for the OCR detection of the license. The wider the plate, the better. However, images may be blurry. This phenomenon is caused by large shutter speeds and the H265 compression. The latter reduces the bandwidth of the video signal by removing redundant regions between consecutive frames. Details, like tiny characters, only become visible when larger movements have been processed. Hence license plates become clearer when the vehicle is stationary in front of the camera.<
+#### Fuzzy weights.
 The best frame is a weighted sum of the width, edges and speed.
 
 
