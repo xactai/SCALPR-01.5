@@ -38,7 +38,7 @@ To highlight possible tracking errors, the color of the rectangle depends on the
 
 #### Route
 At this stage, the static frame-by-frame domain transitions into the tractory domain. In other words, only movements are observed.<br> 
-Once an object has a sequence number, a structure is created and added to the Rbusy array (Route Busy).<br>
+Once an object has a tracking number, a structure is created and added to the Rbusy array (Route Busy).<br>
 Note, in addition to vehicles, people are tracked once they are detected also.<br>
 The structure contains all essential information about the object.<br>
 ```cpp
@@ -73,7 +73,18 @@ The structure contains all essential information about the object.<br>
     std::string PlateOCR;                           //OCR string with best result of the plate (if found)
 ```
 It's a long list because C++ inheritance is used here.<br>
-TRoute inherits all elements from TObject, which in turn has already inherited the structure bbox_t from Darknet.<br>
+TRoute inherits all elements from TObject, which in turn has already inherited the structure bbox_t from Darknet.<br><br>
+
+When an object gets a tracking number `track_id`, a new structure is allocated in memory.<br>
+`Used` is set, `Tstart` is filled with the current time and date, and `FirstFrame` with the current frame number. Using the frame counter eases time-related calculations.
+`Xc` and `Yc` are holding the object's centre. The values are calculated from bbox_t `x`, `y`, `w` and `h`.<br>
+When the object is identified the next time, `LastFrame` and `Tend` are filled. `Xc, Yc` are transferred to `Xt, Yt` before the new ROI centre is updated.
+`Velocity` is calculated from the Euclidean distance between the `Xc, Yc` and `Xt, Yt`, divided by the elapsed time. `Speed` gives a moving average of the last 5 velocities.<br><br>
+When a license plate is detected, `PlateFound` is true, 'PlateSpeed' is filled with the average speed and `PlateEdge` with the variable `PlateMedge`. See the pictures at [YoloV4tinyMulti3](https://github.com/xactai/SCALPR-01.5/tree/main/YoloV4tinyMulti3#license-plate-location-detector). The last parameter, `PlateRatio`, is filled with the license plate width/height ratio. Subsequence frames will update all these parameters.<br><br>
+The goal now is to get the best frame for the OCR detection of the license. The wider the plate, the better. However, images may be blurry. This phenomenon is caused by large shutter speeds and the H265 compression. The latter reduces the bandwidth of the video signal by removing redundant regions between consecutive frames. Details, like tiny characters, only become visible when larger movements have been processed. Hence license plates become clearer when the vehicle is stationary in front of the camera.<br>
+The best frame is a weighted sum of the width, edges and speed.
+
+
 
 ------------
 
