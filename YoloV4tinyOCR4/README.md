@@ -90,14 +90,75 @@ If the Fuzzy number exceeds the previous one, the license plate is considered 'b
 Play a bit with the weights to get the best result. A lot of emphasis on width can result in larger plates, but with vague characters, the OCR engine will eventually generate more errors than a smaller plate with sharp letters.
 #### Rdone.
 After a frame update, all elements in the Rbusy are scanned for their `LastFrame`. If a `LastFrame` does not match the current frame number, you know that the object has not been updated. If a license plate is found, and the image `Plate` isn't empty, the OCR engine is invoked to read the license plate. This engine is currently the same as found in https://github.com/xactai/qengineering-01. The result is stored in `PlateOCR`, a readable std::string.<br>
-Time to move the structure to the Rdone (Route Done) array and setting the `Done` flag. At the same time, it is removed from the Rbusy array.<br><br>
+Time to move the structure to the Rdone (Route Done) array. At the same time, it is removed from the Rbusy array.<br><br>
 Most of the time, this mechanism works fine. However, there are situations where it fails. It has to do with the imperfection of the Darknet tracking engine. When `track_id` doesn't occur any more, it doesn't always mean it left the scene. The large object in front may be hiding it. Think of a tuk-tuk moving near the camera and blocking the view to the entrance. Once moved away, the original object re-appears.<br> 
-The Darknet tracking engine may respond to this event by generating the same `track-id` or issuing a new tracking number.
+The Darknet tracking engine may respond to this event by generating the same `track-id` or issuing a new tracking number.<br><br>
+Without special measures, a new Rbusy object will be created. As a result, the vehicle is processed twice. In order to prevent this happening, the Rdone list is checked to see if it has not been added last. The first thing to look at is the tracking number. The second check is the time difference. With a few frames between the two, you know vehicle is the same. After all, in practice, it is impossible to find another car in the same spot within a second.
+If it turn out that the vehicle is identical, it is been pushed back to the Rbusy list. 
+#### VEHICLE_Rect
+As already explained, the most legible license plate. is found through a weighted mix of width, edges and speed.
+After checking in, the vehicle increases speed and passes under the camera. It can also make a turn to the next floor. During this manoeuvre, the number plate widens. However, the readability decreases because not only does the speed increase but also because the image is increasingly skewed.
+The easiest way to filter this is to define a region where readability is likely guaranteed; the VEHICLE_rect, in the image above, is marked by a thin blue line. In the Config.JSON it is defined by relative numbers. For example, "left": 0.234 stands for 0.234*DNN_Rect.width + DNN_Rect.x = 400 pixels left from the input frame.
+Once a vehicle crosses this boundary, the processing is stopped by setting the Done flag and resetting Used.<br>
+Please note, it only applies to four-wheelers. Two-wheelers are best recognized by YoloV4 from their side view. In order words, let them take a turn in front of the camera.
 
 ------------
 
 ## Dependencies.
-The dependencies are the same as in previous versions.
+To run the application, you need to have:
+- Darknet ([the Alexey version](https://github.com/AlexeyAB/darknet)) installed.
+- OpenCV 64-bit installed.
+- ncnn framework installed.
+- JSON for C++ installed.
+- MQTT installed.
+- Code::Blocks installed, if you like to work with the C++ source. 
+
+### Installing the dependencies.
+Start with the usual 
+```
+$ sudo apt-get update 
+$ sudo apt-get upgrade
+$ sudo apt-get install curl libcurl3
+$ sudo apt-get install cmake wget
+```
+#### JSON for C++
+written by [Niels Lohmann](https://github.com/nlohmann).
+```
+$ git clone https://github.com/nlohmann/json.git
+$ cd json
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make -j4
+$ sudo make install
+$ sudo ldconfig
+```
+#### MQTT
+```
+$ git clone --depth=1 https://github.com/eclipse/paho.mqtt.c.git
+$ cd paho.mqtt.c
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make -j4
+$ sudo make install
+$ sudo ldconfig
+```
+#### Code::Blocks
+```
+$ sudo apt-get install codeblocks
+$ sudo apt-get install codeblocks-contrib
+```
+If you want to run the app from within the IDE, you need to set the environment variables in Code::Blocks also.<br>
+You can find them in menu option Settings->Environment. On the left side scroll down to 'Environment variables' and add these two lines.<br>
+```
+MQTT_SERVER=localhost:1883
+MQTT_CLIENT_ID=Xinthe_parking
+```
+#### OpenCV
+Follow this [guide](https://qengineering.eu/install-opencv-4.5-on-jetson-nano.html).
+#### Darknet
+Follow this [guide](https://qengineering.eu/install-darknet-on-jetson-nano.html).
 
 ------------
 
