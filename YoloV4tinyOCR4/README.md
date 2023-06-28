@@ -14,6 +14,12 @@ This study is all about tracking objects in time and space.<br>
 ## How it works.
 ![image](https://github.com/xactai/SCALPR-01.5/assets/44409029/3aff2b06-8637-46c8-9432-f672bab9d2f5)
 
+#### Work width and height
+All input streams are first resized to `WORK_WIDTH, WORK_HEIGHT` to ensure uniform dimensions of all frames. It means you don't have to declare the model parameters for each stream; these now apply to all cameras simultaneously.<br>
+It may be smaller than the RTSP streams received. Smaller resolutions require fewer resources, which increases processing speed. Or more cameras can be connected.<br>
+On the other hand, the images cannot be chosen too small because the number plate will still have to be legible. Remember, the darknet model for the license plates works with [352x128](https://github.com/xactai/SCALPR-01.5/tree/main/YoloMultiDusty#this-repo-examines-rtsp-streams-with-nvidia-boards-like-the-jetson-nano) pixels.<br>
+Frames larger than the camera resolution are processed, but do not add anything to the accuracy. They will only slow down the performance.
+
 #### DNN_Rect
 In the first phase, all objects in the `DNN_Rect` are detected by the YoloV4-tiny model.<br>
 Most models, such as YoloV4, work best with square images. `DNN_Rect` defines an area of interest that is more or less square.<br>
