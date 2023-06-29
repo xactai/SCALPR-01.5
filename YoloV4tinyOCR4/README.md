@@ -70,15 +70,19 @@ The structure contains all essential information about the object.<br>
     size_t  LastFrame;                              //when not updated, you know the object has left the scene
     std::chrono::steady_clock::time_point Tstart;   //time stamp first seen
     std::chrono::steady_clock::time_point Tend;     //time stamp last seen
+    std::chrono::steady_clock::time_point TFinp;    //time vehicle is first inspected
+    std::chrono::steady_clock::time_point TLinp;    //time vehicle is last inspected
+    int Person_ID {-1};                             //tracking number of person inspecting the vehicle
+    bool Inspected {false};                         //is the vehicle inspected?
     int Xc {0};                                     //ROI center (x,y)
     int Yc {0};                                     //ROI center (x,y)
     int Xt, Yt;                                     //previous center (x,y)
     float Velocity;                                 //pixels/100mSec (0.1Sec to increase readability)
     TMoveAver<float> Speed;                         //average speed over the last 5 observations
-    float PlateSpeed;                               //average speed when snapshot of license was taken
+    float PlateSpeed;                               //average speed when taken snapshot of license
     float PlateEdge;                                //edge ratio in plate
     float PlateRatio {0.0};                         //plate width/height
-    std::string PlateOCR;                           //OCR string with best result of the plate (if found)
+    std::string PlateOCR;                           //OCR best result of the plate (if found)
 ```
 It's a long list because C++ inheritance is used here.<br>
 TRoute inherits all elements from TObject, which in turn has already inherited the structure bbox_t from Darknet.<br><br>
@@ -89,7 +93,7 @@ When an object gets a tracking number `track_id`, a new structure is allocated i
 When the object is identified the next time, `LastFrame` and `Tend` are filled. `Xc, Yc` are transferred to `Xt, Yt` before the new ROI centre is updated.
 `Velocity` is calculated from the Euclidean distance between the `Xc, Yc` and `Xt, Yt`, divided by the elapsed time. `Speed` gives a moving average of the last 5 velocities.<br><br>
 When a license plate is detected, `PlateFound` is true, 'PlateSpeed' is filled with the average speed and `PlateEdge` with the variable `PlateMedge`. See the pictures at [YoloV4tinyMulti3](https://github.com/xactai/SCALPR-01.5/tree/main/YoloV4tinyMulti3#license-plate-location-detector). The last parameter, `PlateRatio`, is filled with the license plate width/height ratio. Subsequence frames will update all these parameters.<br><br>
-The goal now is to get the best frame for the OCR detection of the license. The wider the plate, the better. However, images may be blurry. This phenomenon is caused by large shutter speeds and the H265 compression. The latter reduces the bandwidth of the video signal by removing redundant regions between consecutive frames. Details, like tiny characters, only become visible when larger movements have been processed. Hence license plates become clearer when the vehicle is stationary in front of the camera.<
+The goal now is to get the best frame for the OCR detection of the license. The wider the plate, the better. However, images may be blurry. This phenomenon is caused by large shutter speeds and the H265 compression. The latter reduces the bandwidth of the video signal by removing redundant regions between consecutive frames. Details, like tiny characters, only become visible when larger movements have been processed. Hence license plates become clearer when the vehicle is stationary in front of the camera.
 #### Fuzzy weights.
 The best frame is a weighted sum of the width, edges and speed. The variables are multiplied by `WEIGHT_WIDTH, WEIGHT_EDGE` and `WEIGHT_SPEED` from the Config.json. In the image above, you can see this calculation in the terminal window. Please note that the numbers are not normalized. In other words, the 114 plate width is typical of this camera setup. The same applies to the edges and speed. Other situations can give a number a different size.<br>
 If the Fuzzy number exceeds the previous one, the license plate is considered 'better'. `PlateFuzzy` is loaded with this higher value, and a copy of the license plate image (`cv::Mat  Plate`) is created. Over time, you see the license plate image become wider and clearer (as long as the vehicle is moving slowly).
@@ -105,8 +109,17 @@ If it turn out that the vehicle is identical, it is been pushed back to the Rbus
 As already explained, the most legible license plate. is found through a weighted mix of width, edges and speed.
 After checking in, the vehicle increases speed and passes under the camera. It can also make a turn to the next floor. During this manoeuvre, the number plate widens. However, the readability decreases because not only does the speed increase but also because the image is increasingly skewed.
 The easiest way to filter this is to define a region where readability is likely guaranteed; the VEHICLE_rect, in the image above, is marked by a thin blue line. In the Config.JSON it is defined by relative numbers. For example, "left": 0.234 stands for 0.234*DNN_Rect.width + DNN_Rect.x = 400 pixels left from the input frame.
-Once a vehicle crosses this boundary, the processing is stopped by setting the Done flag and resetting Used.<br>
-Please note, it only applies to four-wheelers. Two-wheelers are best recognized by YoloV4 from their side view. In order words, let them take a turn in front of the camera.
+Once a vehicle crosses this boundary, the processing is stopped by setting the `Done` flag and resetting `Used`.<br>
+Please note, it only applies to four-wheelers. Two-wheelers are best recognized by YoloV4 from their side view. In order words, let them take a turn in front of the camera. They have their `Done` flag set as soon as they crossed the DNN_Rect.
+#### Inspection
+The 'Inspected' flag is set when a person and a vehicle are nearby for a specified time period.<br>
+It is a rudimentary setup. The Euclidean distance from the vehicle to the person is determined. If it is small enough, a timer starts running.
+The timer continues as long as a person remains within the defined distance from the vehicle. Accidental passers-by are taken into account also.
+Once the vehicle leaves the crime scene, the `Inspected` flag is set or reset, depending on the time measured. Two-wheelers are not processed.
+#### OCR
+Once the `Done` flag is set, the OCR engine starts. If a license plate is found, the OCR routines try to read the number plate.
+As shown [earlier](https://github.com/xactai/qengineering-01), the result becomes more reliable when the heuristic algorithms work. You can enable it with `"Heuristic": true` in the config.json.
+The routine will display " ?? " if an image is unreadable.
 
 ------------
 
