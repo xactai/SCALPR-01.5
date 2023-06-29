@@ -6,11 +6,12 @@
     "STREAM_1": {
         "CAM_NAME": "Cam 1",
         "MJPEG_PORT": 8091,
+        "MQTT_CLIENT_ID": "parking_1",
         "VIDEO_INPUT": "video",
         "VIDEO_INPUTS_PARAMS": {
             "image": "./images/car.jpg",
             "folder": "./inputs/images",
-            "video": "./Cars.mp4",
+            "video": "./CarsSkew.mp4",
             "usbcam": "v4l2src device=/dev/video0 ! video/x-raw(memory:NVMM),width=640, height=360, framerate=30/1 ! videoconvert ! appsink",
             "CSI1": "nvarguscamerasrc sensor_id=0 ! video/x-raw(memory:NVMM),width=640, height=480, framerate=15/1, format=NV12 ! nvvidconv ! video/x-raw, format=BGRx, width=640, height=480 ! videoconvert ! video/x-raw, format=BGR ! appsink",
             "CSI2": "nvarguscamerasrc sensor_id=1 ! video/x-raw(memory:NVMM),width=640, height=480, framerate=15/1, format=NV12 ! nvvidconv ! video/x-raw, format=BGRx, width=640, height=480 ! videoconvert ! video/x-raw, format=BGR ! appsink",
@@ -35,6 +36,7 @@
     "STREAM_2": {
         "CAM_NAME": "Cam 2",
         "MJPEG_PORT": 8092,
+        "MQTT_CLIENT_ID": "parking_2",
         "VIDEO_INPUT": "IMOU",
         "VIDEO_INPUTS_PARAMS": {
             "CCTV": "rtsp://192.168.178.108:8554/test/",
@@ -57,6 +59,7 @@
     "STREAM_3": {
         "CAM_NAME": "Cam 3",
         "MJPEG_PORT": 8093,
+        "MQTT_CLIENT_ID": "parking_3",
         "VIDEO_INPUT": "CCTV",
         "VIDEO_INPUTS_PARAMS": {
             "CCTV": "rtsp://192.168.178.108:8554/test/"
@@ -78,6 +81,7 @@
     "STREAM_4": {
         "CAM_NAME": "Cam 4",
         "MJPEG_PORT": 8094,
+        "MQTT_CLIENT_ID": "parking_4",
         "VIDEO_INPUT": "CCTV",
         "VIDEO_INPUTS_PARAMS": {
             "CCTV": "rtsp://192.168.178.26:8554/test/"
@@ -104,8 +108,14 @@
     "VEHICLE_MIN_WIDTH" : 0.18,
     "VEHICLE_MIN_HEIGHT" : 0.15,
 
+    "TWO_WHEELER_MIN_WIDTH" : 0.10,
+    "TWO_WHEELER_MIN_HEIGHT" : 0.08,
+
     "PERSON_MIN_WIDTH" : 0.04,
     "PERSON_MIN_HEIGHT" : 0.07,
+
+    "INSPECT_TIME" : 2.00,
+    "INSPECT_DISTANCE" : 0.15,
 
     "MJPEG_PORT": 8090,
     "MJPEG_WIDTH": 640,
@@ -117,7 +127,7 @@
 
     "WEIGHT_WIDTH": 0.25,
     "WEIGHT_EDGE": 4.0,
-    "WEIGHT_SPEED": 1.5,
+    "WEIGHT_SPEED": 4.0,
 
     "RoI": {
         "x_offset": 0,

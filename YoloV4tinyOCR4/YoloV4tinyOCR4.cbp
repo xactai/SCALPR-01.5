@@ -21,6 +21,8 @@
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option host_application="export MQTT_CLIENT_ID=Xinthe_parking" />
+				<Option run_host_application_in_terminal="1" />
 				<Compiler>
 					<Add option="-O3" />
 					<Add directory="include" />
@@ -52,11 +54,15 @@
 			<Add option="-DNDEBUG" />
 			<Add option="-rdynamic" />
 			<Add library="/usr/local/lib/libdarknet.so" />
+			<Add library="/usr/local/lib/libpaho-mqtt3c.so" />
+			<Add library="/usr/local/lib/libpaho-mqtt3a.so" />
 		</Linker>
+		<Unit filename="config.json" />
 		<Unit filename="include/FPS.h" />
 		<Unit filename="include/General.h" />
 		<Unit filename="include/MJPG_sender.h" />
 		<Unit filename="include/MJPGthread.h" />
+		<Unit filename="include/MQTT.h" />
 		<Unit filename="include/Numbers.h" />
 		<Unit filename="include/ProcessPipe.h" />
 		<Unit filename="include/Regression.h" />
@@ -68,6 +74,7 @@
 		<Unit filename="src/FPS.cpp" />
 		<Unit filename="src/MJPG_sender.cpp" />
 		<Unit filename="src/MJPGthread.cpp" />
+		<Unit filename="src/MQTT.cpp" />
 		<Unit filename="src/Main.cpp" />
 		<Unit filename="src/ProcessPipe.cpp" />
 		<Unit filename="src/Regression.cpp" />
