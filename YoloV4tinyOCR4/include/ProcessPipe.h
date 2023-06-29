@@ -32,6 +32,7 @@ protected:
 public:
     cv::Mat     MatAr;                              //frame received from CamGrb
     TTracer     Trace;                              //follow the object routes
+    std::string MQTT_ID;                            //MQTT client name
 
     TProcessPipe(void);
     virtual ~TProcessPipe(void);

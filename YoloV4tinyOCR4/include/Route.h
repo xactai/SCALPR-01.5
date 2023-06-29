@@ -36,6 +36,10 @@ struct TRoute : public TObject
     size_t  LastFrame;                              //when not updated, you know the object has left the scene
     std::chrono::steady_clock::time_point Tstart;   //time stamp first seen
     std::chrono::steady_clock::time_point Tend;     //time stamp last seen
+    std::chrono::steady_clock::time_point TFinp;    //time vehicle is first inspected
+    std::chrono::steady_clock::time_point TLinp;    //time vehicle is last inspected
+    int Person_ID {-1};                             //tracking number of person inspecting the vehicle
+    bool Inspected {false};                         //is the vehicle inspected?
     int Xc {0};                                     //ROI center (x,y)
     int Yc {0};                                     //ROI center (x,y)
     int Xt, Yt;                                     //previous center (x,y)
@@ -46,7 +50,8 @@ struct TRoute : public TObject
     float PlateRatio {0.0};                         //plate width/height
     std::string PlateOCR;                           //OCR best result of the plate (if found)
 
-    inline void operator=(const TRoute R1){
+    inline void operator=(const TRoute R1)
+    {
         PlateFound = R1.PlateFound;
         PlateRect  = R1.PlateRect;
         obj_id     = R1.obj_id;
@@ -61,6 +66,10 @@ struct TRoute : public TObject
         LastFrame  = R1.LastFrame;
         Tstart     = R1.Tstart;
         Tend       = R1.Tend;
+        TFinp      = R1.TFinp;
+        TLinp      = R1.TLinp;
+        Person_ID  = R1.Person_ID;
+        Inspected  = R1.Inspected;
         PlateSpeed = R1.PlateSpeed;
         PlateEdge  = R1.PlateEdge;
         PlateRatio = R1.PlateRatio;
@@ -68,7 +77,8 @@ struct TRoute : public TObject
         Plate      = R1.Plate.clone();
     }
 
-    inline void Update(const TObject& box, const cv::Mat &frame, const size_t FrameCnt){
+    inline void Update(const TObject& box, const cv::Mat &frame, const size_t FrameCnt)
+    {
         float Rwidth, Redge, Rspeed, Aspeed, Wfuzzy;
 
         obj_id    = box.obj_id;
@@ -110,9 +120,10 @@ struct TRoute : public TObject
                 PlateRatio = (float)box.PlateRect.width / (float)box.PlateRect.height;
                 Plate  = frame(PlateRect).clone();
 
-//            std::string St="Plate"+std::to_string(FrameCnt);
-//            St+=".png";
-//            cv::imwrite(St,Plate);
+//                std::cout << "----------- New ------------" << std::endl;
+//                std::string St="Plate"+std::to_string(FrameCnt);
+//                St+=".png";
+//                cv::imwrite(St,Plate);
 
             }
             else{
@@ -125,11 +136,11 @@ struct TRoute : public TObject
 
                 Aspeed=Speed.Aver(); //speed (lower is better)
                 if(Aspeed<=0.0) Aspeed=0.0001; //if zero, give it small bias, otherwise the calcus fails
-                Rspeed  = Js.Wspeed/Aspeed;
+                Rspeed  = 30.0*Js.Wspeed/Aspeed;
                 //add
                 Wfuzzy = Rwidth + Redge + Rspeed;
 
-//std::cout << "Width " << box.PlateRect.width << "  Edge " << box.PlateMedge << "  Speed " << Aspeed << "  Fuzzy " << Wfuzzy << std::endl;
+//std::cout << "Width " << box.PlateRect.width << " (" << Rwidth << ")  Ratio " << PlateRatio << "  Edge " << box.PlateMedge << " (" << Redge << ") Speed " << Aspeed << " ( " << 1.0/Aspeed << " = " <<  Rspeed << ")  Fuzzy " << Wfuzzy << std::endl;
 
                 //look if its a better plate
                 if(PlateFuzzy < Wfuzzy){
@@ -139,13 +150,10 @@ struct TRoute : public TObject
                     PlateEdge  = box.PlateMedge;
                     PlateRatio = (float)box.PlateRect.width / (float)box.PlateRect.height;
                     Plate  = frame(PlateRect).clone();
-
-std::cout << "update better " << FrameCnt << "  PlateFuzzy " << PlateFuzzy << std::endl;
-
-//            std::string St="Plate"+std::to_string(FrameCnt);
-//            St+=".png";
-//            cv::imwrite(St,Plate);
-
+//                    std::cout << "---------- Better : " << FrameCnt << "  PlateFuzzy " << PlateFuzzy << std::endl;
+//                    std::string St="Plate"+std::to_string(FrameCnt);
+//                    St+=".png";
+//                    cv::imwrite(St,Plate);
                 }
             }
         }

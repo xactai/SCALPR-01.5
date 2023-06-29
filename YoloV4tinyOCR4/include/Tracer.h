@@ -11,8 +11,9 @@ public:
     TTracer();
     virtual ~TTracer();
     void Init(void);
-    void Add(const cv::Mat &frame,TObject& box);
+    void Add(const cv::Mat &frame, TObject& box, const cv::Rect &DnnRect);
     void Update(void);
+    void Clean(void);
     std::vector<TRoute> Rdone;
     std::vector<TRoute> Rbusy;
 protected:

@@ -29,9 +29,14 @@ public:
     ///to filter out the background with its cars and tuktuks
     double VehicleMinWidth;   //Minimal width ratio of vehicles to process (no background traffic)
     double VehicleMinHeight;  //Minimal height ratio of vehicles to process (no background traffic)
+    double TwoWheelMinWidth;  //Minimal width ratio of two wheelers to process (no background traffic)
+    double TwoWheelMinHeight; //Minimal height ratio of two wheelers to process (no background traffic)
     ///persons must also be on the foreground
     double PersonMinWidth;    //Minimal width ratio of persons to process
     double PersonMinHeight;   //Minimal height ratio of persons to process
+    ///inspection
+    double InspectTime;       //Minimal width ratio of persons to process
+    double InspectDistance;   //Minimal height ratio of persons to process
     ///decision weights when a image has a 'better' readable license plate
     ///0 is turned off| >0 working | can be a mix like Wwidth=1.0 Wedge=2.5 Wspeed=12.5
     double Wwidth;            //Width of plate
