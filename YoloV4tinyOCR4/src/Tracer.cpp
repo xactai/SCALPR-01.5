@@ -1,4 +1,7 @@
 #include "Tracer.h"
+#include "Tjson.h"
+
+extern Tjson    Js;
 //----------------------------------------------------------------------------------
 TTracer::TTracer()
 {
@@ -14,18 +17,32 @@ void TTracer::Init(void)
     Tag++;
 }
 //----------------------------------------------------------------------------------
-void TTracer::Add(const cv::Mat &frame, TObject& box)
+void TTracer::Add(const cv::Mat &frame, TObject& box, const cv::Rect &DnnRect)
 {
     size_t i, n, p;
     bool Found=false;
 
-    //check if it is inside the vehicle rect (not a person)
-    if((box.x       >= (unsigned int)VehicleRect.x                   ) &&
-       (box.y       >= (unsigned int)VehicleRect.y                   ) &&
-       (box.x+box.w <= (unsigned int)VehicleRect.x+VehicleRect.width ) &&
-       (box.y+box.h <= (unsigned int)VehicleRect.y+VehicleRect.height)){;}
+    //check if the car is inside the VEHICLE_Rect
+    if(box.obj_id==2){
+        if((box.x       >= (unsigned int)VehicleRect.x                   ) &&
+           (box.y       >= (unsigned int)VehicleRect.y                   ) &&
+           (box.x+box.w <= (unsigned int)VehicleRect.x+VehicleRect.width ) &&
+           (box.y+box.h <= (unsigned int)VehicleRect.y+VehicleRect.height)){;}
+        else{
+            box.Used = false;
+        }
+    }
     else{
-        if(box.obj_id != 0 ) box.Used = false;      //ignore persons (obj_id = 0)
+        //check if the two-wheeler is inside the DNN_rect
+        if((box.obj_id==1) || (box.obj_id==3) ){
+            if((box.x       >= (unsigned int)DnnRect.x                   ) &&
+               (box.y       >= (unsigned int)DnnRect.y                   ) &&
+               (box.x+box.w <= (unsigned int)DnnRect.x+DnnRect.width ) &&
+               (box.y+box.h <= (unsigned int)DnnRect.y+DnnRect.height)){;}
+            else{
+                box.Used = false;
+            }
+        }
     }
 
     //check if it is new object
@@ -89,17 +106,36 @@ void TTracer::Add(const cv::Mat &frame, TObject& box)
 //----------------------------------------------------------------------------------
 void TTracer::Update(void)
 {
-    size_t i;
+    float Tcontact;
+
     //see which object isn't been updated
-    for(i=0;i<Rbusy.size();i++){
+    for(size_t i=0;i<Rbusy.size();i++){
         if(Rbusy[i].LastFrame != Tag){
             //object is not in scene anymore
             if((Rbusy[i].obj_id != 0) && (Rbusy[i].Tstart!=Rbusy[i].Tend)){
+                //get inspection info
+                if((Rbusy[i].Person_ID >=0) && (Rbusy[i].obj_id == 2)){
+                    Tcontact = std::chrono::duration_cast<std::chrono::milliseconds>(Rbusy[i].TLinp-Rbusy[i].TFinp).count();
+                    Rbusy[i].Inspected = (Tcontact >= Js.InspectTime);
+//                    std::cout << "Inspected : "<< Rbusy[i].Inspected <<"  Tcontact : " << Tcontact << std::endl;
+                }
                 //move it to Rdone (if not a person, or a one time glitch (Tstart = Tend)
                 Rdone.push_back(Rbusy[i]);
             }
             //remove the object from Rbusy
             Rbusy.erase(Rbusy.begin() + i);
+            i--;
+        }
+    }
+}
+//----------------------------------------------------------------------------------
+void TTracer::Clean(void)
+{
+    //see which object has impossible short times
+    for(size_t i=0;i<Rdone.size();i++){
+        if(((Rdone[i].LastFrame-Rdone[i].FirstFrame)<3) || (Rdone[i].PlateEdge<0)){
+            //object has a too short live span or has negative edges, remove
+            Rdone.erase(Rdone.begin() + i);
             i--;
         }
     }

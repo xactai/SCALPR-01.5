@@ -87,13 +87,14 @@ void TOCR::SortPlate(vector<bbox_t>& cur_bbox_vec)
         //if the standard deviation is high, you have one line of text
         //if the R is low, you have a two line number plate.
 
-    //    cout << "A = " << A << "  B = " << B << "  R = " << R << endl;
+//        cout << "A = " << A << "  B = " << B << "  R = " << R << endl;
     }
     else{
         R=1.0;  // with 4 or less characters, assume we got always one line.
     }
 
-    if( R < 0.25 ){
+    if( R < 0.08 ){
+//        cout << "two lines" << endl;
         //two lines -> sort on y first
         for(i=0; i<len; i++){
             for(j=i+1; j<len; j++){
@@ -119,6 +120,7 @@ void TOCR::SortPlate(vector<bbox_t>& cur_bbox_vec)
         SortSingleLine(cur_bbox_vec, ch_wd, ch_ht, bnd, len);
     }
     else{
+//        cout << "one line" << endl;
         //one line -> sort by x position
         SortSingleLine(cur_bbox_vec, ch_wd, ch_ht, 0, len);
     }
@@ -153,9 +155,7 @@ void TOCR::OCR(TRoute& route)
             route.PlateOCR=text;
         }
     }
-
-    cout << " -----------------> OCR : " << route.PlateOCR << endl;
-
+//    cout << " -----------------> OCR : " << route.PlateOCR << endl;
     Tend = std::chrono::steady_clock::now();
     Msec+= std::chrono::duration_cast<std::chrono::milliseconds> (Tend - Tbegin).count();
     Mcnt++;

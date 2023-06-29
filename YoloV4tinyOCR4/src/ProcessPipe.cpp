@@ -63,6 +63,7 @@ void TProcessPipe::Init(const int Nr)
 
     json Jstr=Js.j["STREAM_"+std::to_string(CamNr+1)];
 
+    TJ.GetSetting(Jstr,"MQTT_CLIENT_ID",MQTT_ID);
     TJ.GetSetting(Jstr,"MJPEG_PORT",MJpeg);
     if(MJpeg>7999){
         MJ = new MJPGthread();
@@ -92,6 +93,9 @@ void TProcessPipe::Init(const int Nr)
     else                                              { Trace.VehicleRect.width=               DnnRect.width; }
     if(TJ.GetSetting(Jstr["VEHICLE_Rect"],"bottom",d)){ Trace.VehicleRect.height=(int)((1.0-d)*DnnRect.height);}
     else                                              { Trace.VehicleRect.height=              DnnRect.height;}
+
+    //get MQTT client ID
+    if(!TJ.GetSetting(Jstr["DNN_Rect"],"x_offset",DnnRect.x))     std::cout << "Using default value" << std::endl;
 
     UseNetRect = (DnnRect.x!= 0 || DnnRect.y!=0 || DnnRect.width!=Width || DnnRect.height!=Height);
     RdyNetRect = false;
@@ -234,7 +238,6 @@ void TProcessPipe::ProcessDNN(cv::Mat& frame)
     GetPlatePosition(frame, Objects);
 
     DrawObjects(frame, Objects);
-
 }
 //---------------------------------------------------------------------------
 // Discrete OpenCV method = 9 mSec | DarkNet = 67 mSec
@@ -267,15 +270,14 @@ bool TProcessPipe::GetPlatePosition(cv::Mat& frame, std::vector<TObject>& boxes)
                ((i.x + i.w) < Wd) && ((i.y + i.h) < Ht)){
                 //mark as used
                 i.Used = true;
-                Trace.Add(frame, i);
+                Trace.Add(frame, i, DnnRect);
             }
         }
-        if((i.obj_id == 2)){//||(i.obj_id == 7)){       //car or truck
+        if((i.obj_id == 1)||(i.obj_id == 2)||(i.obj_id == 3)){                                              // bicycle, car or motor cycle
             //a known issue; the whole image is selected as an object -> skip this result
-            if((100*i.w>(95*Wd)) || (100*i.h>(95*Ht))) continue;    //stay in the integer domain
-            //Create the rectangle
-            if((i.w > Wd*Js.VehicleMinWidth) && (i.h > Ht*Js.VehicleMinHeight) &&    //get some width and height
-               ((i.x + i.w) < Wd) && ((i.y + i.h) < Ht)){
+            if((100*i.w>(95*Wd)) || (100*i.h>(95*Ht)) || ((i.x + i.w)>=Wd) || ((i.y + i.h)>=Ht)) continue;
+            if(((i.obj_id == 2) && (i.w > Wd*Js.VehicleMinWidth) && (i.h > Ht*Js.VehicleMinHeight))||                     // a car
+               (((i.obj_id == 1)||(i.obj_id == 3)) &&  (i.w > Wd*Js.TwoWheelMinWidth) && (i.h > Ht*Js.TwoWheelMinHeight)) ){ // a two-wheeler
                 //mark as used
                 i.Used = true;
 
@@ -320,27 +322,41 @@ bool TProcessPipe::GetPlatePosition(cv::Mat& frame, std::vector<TObject>& boxes)
                     i.PlateRect  = cv::Rect(MemRect.x+i.x, MemRect.y+i.y, MemRect.width, MemRect.height);
                     i.PlateMedge = MemEdge;      //MemEdge hold the highest edge ratio found in MemRect
                 }
-                Trace.Add(frame, i);
+                Trace.Add(frame, i, DnnRect);
+            }
+        }
+    }
+
+    float Dist;
+
+    //check inspection of vehicles
+    for(size_t v=0; v<Trace.Rbusy.size(); v++){
+        //see if there is a vehicle with track_id and Used in the scene
+        if((Trace.Rbusy[v].obj_id == 2) && (Trace.Rbusy[v].track_id > 0) && (Trace.Rbusy[v].Used)){
+            //persons
+            for(size_t p=0; p<Trace.Rbusy.size(); p++){
+                //see if there is a person with track_id and Used in the scene
+                if((Trace.Rbusy[p].obj_id == 0) && (Trace.Rbusy[p].track_id > 0) && (Trace.Rbusy[p].Used)){
+                    //get the distance between vehicle and person
+                    Dist = sqrt((Trace.Rbusy[v].Xc-Trace.Rbusy[p].Xc)*(Trace.Rbusy[v].Xc-Trace.Rbusy[p].Xc) +
+                                (Trace.Rbusy[v].Yc-Trace.Rbusy[p].Yc)*(Trace.Rbusy[v].Yc-Trace.Rbusy[p].Yc) );
+                    //are they close enough?
+                    if(Dist < Wd*Js.InspectDistance){
+                        if(Trace.Rbusy[v].Person_ID<0){
+                            Trace.Rbusy[v].TFinp     = std::chrono::steady_clock::now();
+                            Trace.Rbusy[v].Person_ID = (int) Trace.Rbusy[p].track_id;
+                        }
+                        Trace.Rbusy[v].TLinp     = std::chrono::steady_clock::now();
+                    }
+                }
             }
         }
     }
 
     Trace.Update();     //check if there are any objects with an old time tag (they have left the scene)
+//    Trace.Clean();      //remove ghosts (only seen 1 or 2 frames)
 
     return Success;
-
-
-//    Tbegin = std::chrono::steady_clock::now();
-//
-//                    //detect plates
-//                    cv::Mat frame_plate = frame(i.PlateRect);
-//                    result_ocr = OcrNet.detect(frame_plate,Js.ThresOCR);
-//
-//    Tend = std::chrono::steady_clock::now();
-//    Msec+= std::chrono::duration_cast<std::chrono::milliseconds> (Tend - Tbegin).count();
-//    Mcnt++;
-
-
 }
 //---------------------------------------------------------------------------
 void TProcessPipe::DrawObjects(cv::Mat& frame, const std::vector<TObject>& boxes)

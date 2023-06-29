@@ -87,8 +87,12 @@ bool Tjson::GetSettings(void)
         if(!GetSetting(j["RoI"],"height",RoiCrop.height))           return Success;
         if(!GetSetting(j,"VEHICLE_MIN_WIDTH",VehicleMinWidth))      return Success;
         if(!GetSetting(j,"VEHICLE_MIN_HEIGHT",VehicleMinHeight))    return Success;
+        if(!GetSetting(j,"TWO_WHEELER_MIN_WIDTH",TwoWheelMinWidth)) return Success;
+        if(!GetSetting(j,"TWO_WHEELER_MIN_HEIGHT",TwoWheelMinHeight)) return Success;
         if(!GetSetting(j,"PERSON_MIN_WIDTH",PersonMinWidth))        return Success;
         if(!GetSetting(j,"PERSON_MIN_HEIGHT",PersonMinHeight))      return Success;
+        if(!GetSetting(j,"INSPECT_TIME",InspectTime))               return Success;
+        if(!GetSetting(j,"INSPECT_DISTANCE",InspectDistance))       return Success;
         if(!GetSetting(j,"WEIGHT_WIDTH",Wwidth))                    return Success;
         if(!GetSetting(j,"WEIGHT_EDGE",Wedge))                      return Success;
         if(!GetSetting(j,"WEIGHT_SPEED",Wspeed))                    return Success;

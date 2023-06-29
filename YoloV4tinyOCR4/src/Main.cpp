@@ -10,6 +10,7 @@
 #include "ProcessPipe.h"
 #include "FPS.h"
 #include "Tjson.h"
+#include "MQTT.h"
 
 //#define RECORD_VIDEO
 
@@ -47,6 +48,22 @@ float GetTemp(void)
         myfile.close();
     }
     return temp;
+}
+//----------------------------------------------------------------------------------
+// Publish MQTT message with a JSON payload
+void publishMQTTMessage(const string& topic){ //, const ParkingInfo& info) {
+    ostringstream s;
+    s << "{\"TOTAL_IN\": \"" << 5 << "\" \"TOTAL_OUT\": \"" << 7 << "\"}";
+    string payload = s.str();
+    mqtt_publish(topic, payload);
+}
+//----------------------------------------------------------------------------------
+// Message handler for the MQTT subscription for any desired control channel topic
+int handleMQTTControlMessages(void *context, char *topicName, int topicLen, MQTTClient_message *message)
+{
+    cout << "MQTT message received: " << topicName << endl;
+
+    return 1;
 }
 //----------------------------------------------------------------------------------
 void GetComposedView(cv::Mat& Frame)          //returns all frames in one large picture
@@ -131,6 +148,16 @@ int main()
         return 0;
     }
 
+    // Connect MQTT messaging
+    if(mqtt_start(handleMQTTControlMessages) == 0) {
+        cout << "MQTT started." << endl;
+    } else {
+        cout << "MQTT NOT started: have you set the ENV varables?" << endl;
+        return -1;
+    }
+
+    mqtt_connect();
+
 
     ifstream file(Js.Ostr+".names");
 	if(file.is_open()){
@@ -212,6 +239,7 @@ int main()
             if(esc == 27) break;
         }
 
+        //publishMQTTMessage("Topic");
         #ifdef RECORD_VIDEO
             video.write(FrameTotal);
         #endif
@@ -232,7 +260,7 @@ int main()
             of << "    Done : " << ProPipe[0]->Trace.Rdone[i].Done << endl;
             of << "    First frame : " << ProPipe[0]->Trace.Rdone[i].FirstFrame << endl;
             of << "    Last frame : " << ProPipe[0]->Trace.Rdone[i].LastFrame << endl;
-            of << "    Elapsed time : " << (std::chrono::duration_cast<std::chrono::milliseconds>(ProPipe[0]->Trace.Rdone[i].Tend - ProPipe[0]->Trace.Rdone[i].Tstart).count()) << "mSec" << endl;
+            of << "    Elapsed time : " << (std::chrono::duration_cast<std::chrono::milliseconds>(ProPipe[0]->Trace.Rdone[i].Tend - ProPipe[0]->Trace.Rdone[i].Tstart).count())/1000.0 << "Sec" << endl;
             of << "    Velocity : " << ProPipe[0]->Trace.Rdone[i].Velocity << endl;
             of << "    Average speed : " << ProPipe[0]->Trace.Rdone[i].Speed.Aver() << endl;
             of << "    Plate found : " << ProPipe[0]->Trace.Rdone[i].PlateFound << endl;
@@ -243,10 +271,15 @@ int main()
             of << "    Plate speed : " << ProPipe[0]->Trace.Rdone[i].PlateSpeed << endl;
             of << "    Plate edge : " << ProPipe[0]->Trace.Rdone[i].PlateEdge << endl;
             of << "    Plate OCR : " << ProPipe[0]->Trace.Rdone[i].PlateOCR << endl;
+            of << "    Inspected : " << ProPipe[0]->Trace.Rdone[i].Inspected << endl;
+            of << "    Inspection time : " << (std::chrono::duration_cast<std::chrono::milliseconds>(ProPipe[0]->Trace.Rdone[i].TLinp - ProPipe[0]->Trace.Rdone[i].TFinp).count())/1000.0 << "Sec" << endl;
             of << " ---------- " << endl;
-            string St="Plate"+to_string(i);
-            St+=".png";
-            cv::imwrite(St,ProPipe[0]->Trace.Rdone[i].Plate);
+
+            if(!ProPipe[0]->Trace.Rdone[i].Plate.empty()){
+                string St="Plate"+to_string(i);
+                St+=".png";
+                cv::imwrite(St,ProPipe[0]->Trace.Rdone[i].Plate);
+            }
         }
         of.close();
     }
